@@ -1,9 +1,10 @@
 {
   "name": "fis3-hook-amd_enhancejs",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "AMD模块增强的fis3实现",
   "main": "index.js",
   "scripts": {
+    "release": "./build/release.sh"
   },
   "repository": {
     "type": "git",
