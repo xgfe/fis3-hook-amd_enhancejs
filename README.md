@@ -1,5 +1,5 @@
 # fis3-hook-amd_enhancejs
-> AMD模块增强的fis3实现
+> AMD[模块增强规范](https://github.com/xgfe/EnhanceJS)的fis3实现
 
 - 自动引用模块
 - 增强模块功能
