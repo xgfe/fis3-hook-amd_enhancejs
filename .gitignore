@@ -1,0 +1,10 @@
+/node_modules
+/coverage
+.DS_Store
+*.log
+.idea
+.vscode
+/.cache
+/test/.cache
+.eslintcache
+package-lock.json
