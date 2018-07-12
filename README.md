@@ -61,14 +61,22 @@ define([], function() {
 ### enhance
 模块接口增强，扩展`support`引入的属性
 ```js
-// 仅可增强声明过的属性
-support api from 'api'
+define([], function() {
+    // 仅可增强声明过的属性
+    support api from 'api'
 
-// 在api模块，inspire调用时运行
-enhance.api = function(arg1, arg2) {};
+    // 在api模块，inspire调用时运行
+    enhance.api = function(arg1, arg2) {};
+
+    // 必须显式返回`enhance`
+    return {
+        enhance: enhance
+    };
+});
 ```
 
-**注意：`enhance.x`的赋值必须为函数**
+**注意：`enhance`的赋值必须为函数，且必须显式返回`enhance`**
+
 
 ## 注意
 - 每一个文件为一个模块，即`define`一次

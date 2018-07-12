@@ -46,7 +46,7 @@ exports = module.exports = function (fis, opts) {
             }
 
             supportPath = fis.util.stringQuote(supportPath, '\'`"').rest;
-            supportInfo = lookup.init(fis, opts)(fis.project.lookup(supportPath));
+            supportInfo = lookup.init(fis, opts)(fis.util.pathinfo(supportPath), file);
             if (!supportInfo.file || !supportInfo.file.subpath) {
                 fis.log.error(`unable to find ${supportInfo.rest} in ${filePath}.`);
                 return match;
