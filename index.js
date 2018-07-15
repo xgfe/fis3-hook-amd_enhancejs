@@ -1,4 +1,6 @@
-// TODO watch support
+// TODO
+// add require for packger
+// watch support
 var path = require('path');
 var lookup = require('./lib/lookup');
 var parse = require('./lib/parse');
@@ -30,7 +32,7 @@ exports = module.exports = function (fis, opts) {
 
         // injected enchance variable
         var supportInited = false;
-        var supportFiles = [];
+        var supportFiles = {};
 
         var content = wrap(
             // add import relation
@@ -55,14 +57,8 @@ exports = module.exports = function (fis, opts) {
             var supportFile = supportInfo.file;
             var supportFilePath = supportFile.subpath;
 
-            // recompile support file
-            supportFiles.push(supportFilePath);
-
-            // all relations of support file
-            var relations = SUPPORT_FILE_MAP[supportFilePath] = SUPPORT_FILE_MAP[supportFilePath] || {};
-            // current file relation of supportFile
-            var relation = relations[filePath] = relations[filePath] || {};
-
+            // support file relation
+            var relation = supportFiles[supportFilePath] = supportFiles[supportFilePath] || {};
             Object.keys(supportEnhance).forEach(key => {
                 var value = supportEnhance[key];
 
@@ -73,33 +69,41 @@ exports = module.exports = function (fis, opts) {
                 }
             });
 
-            // TODO support * as all from 'path'
-            // enhance.all = function() {};
             match = supportInited ? '' : '\nvar enhance = {};\n';
+
+            // support * as all from 'path'
+            // enhance.all = function() {};
+            match += '\n' + (relation['*'] || []).map(attr => `enhance.${attr} = function() {};`).join('\n') + '\n';
             supportInited = true;
             return match;
         });
 
-        // remove duplicate
-        SUPPORT_RELATION[filePath] = supportFiles.filter((item, idx, arr) => arr.indexOf(item) === idx);
+        var lastSupportRelation = SUPPORT_RELATION[filePath] || [];
+        var currSupportRelation = SUPPORT_RELATION[filePath] = Object.keys(supportFiles);
 
         // check circular support
         var circularSupport = isCircularSupport(filePath, SUPPORT_RELATION);
         if (circularSupport) {
-            return fis.log.error(`circular support in ${circularSupport}`);
+            return fis.log.error(`circular support in ${filePath}: ${[''].concat(circularSupport).join('\n--> ')}`);
         }
 
         // recompile support file
-        SUPPORT_RELATION[filePath].forEach(supportFilePath => {
-            var file = COMPILE_FILE_MAP[supportFilePath];
-            COMPILE_FILE_MAP[supportFilePath] = null;
+        lastSupportRelation.concat(currSupportRelation)
+            .filter((item, idx, arr) => arr.indexOf(item) === idx)
+            .forEach(supportFilePath => {
+                // update relations for old/new support file
+                var relations = SUPPORT_FILE_MAP[supportFilePath] = SUPPORT_FILE_MAP[supportFilePath] || {};
+                relations[filePath] = supportFiles[supportFilePath];
 
-            // file uncompile
-            if (!file) return;
+                var file = COMPILE_FILE_MAP[supportFilePath];
+                COMPILE_FILE_MAP[supportFilePath] = null;
 
-            file.useCache = false;
-            fis.emit('compile:add', file);
-        });
+                // file uncompile
+                if (!file) return;
+
+                file.useCache = false;
+                fis.emit('compile:add', file);
+            });
 
         file.setContent(content);
     });
@@ -109,7 +113,33 @@ exports.defaultOptions = {
     extList: ['.js', '.coffee', '.jsx', '.es6']
 };
 
-// TODO cycle
+
 function isCircularSupport(supportPath, supportMap) {
-    return false;
+  var stacks = [[supportPath]];
+  var deps;
+  while (deps = stacks.pop()) {
+    var supports = supportMap[deps[0]] || [];
+    for (var i = 0; i < supports.length; i++) {
+      var dep = supports[i];
+      if (deps.indexOf(dep) > -1) {
+        return deps;
+      } else {
+        stacks.push([dep].concat(deps));
+      }
+    }
+  }
+  return false;
+}
+
+function isCircularSupportRecursive(supportPath, supportMap, stacks) {
+  stacks = [supportPath].concat(stacks || []);
+  var deps = supportMap[supportPath] || [];
+  for (var i = 0; i < deps.length; i++) {
+    if (stacks.indexOf(deps[i]) > -1) {
+      return true;
+    } else if (isCircularSupportRecursive(deps[i], supportMap, stacks)) {
+      return true;
+    }
+  }
+  return false;
 }
