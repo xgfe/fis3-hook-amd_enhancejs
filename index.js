@@ -25,6 +25,9 @@ var SUPPORT_FILE_MAP = {}; // enhance names of support file
 var SUPPORT_RELATION = {}; // relations of support file
 
 exports = module.exports = function (fis, opts) {
+    opts = opts || {};
+    opts.baseUrl = opts.baseUrl || '/';
+
     fis.on('process:start', function(file) {
         if (!file.isJsLike) return;
         var filePath = file.subpath;
@@ -37,7 +40,8 @@ exports = module.exports = function (fis, opts) {
         var content = wrap(
             // add import relation
             file,
-            SUPPORT_FILE_MAP
+            SUPPORT_FILE_MAP,
+            { baseUrl: opts.baseUrl }
         ).replace(R_SUPPORT_SYNTAX, function(match, supportEnhance, supportPath) {
             if (!supportEnhance) return match;
 
@@ -105,7 +109,15 @@ exports = module.exports = function (fis, opts) {
                 fis.emit('compile:add', file);
             });
 
-        file.setContent(content);
+        // __amd('./uri')
+        file.setContent(content.replace(/\b__amd\(([^)]+)\)/, function(match, uri) {
+            return JSON.stringify(
+                path.relative(
+                    opts.baseUrl,
+                    path.join(file.subdirname, fis.util.stringQuote(uri).rest)
+                ).replace(/\.js$/, '')
+            );
+        }));
     });
 };
 

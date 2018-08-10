@@ -81,3 +81,4 @@ define([], function() {
 ## 注意
 - 每一个文件为一个模块，即`define`一次
 - 每个模块必须严格参照amd规范：`define([], function() {})`
+- 禁止循环增强
